@@ -3,6 +3,9 @@
 docker_apt_prereq_packages:
   - ca-certificates
   - curl
+  # gpg is required by the apt_repository module and is not present by
+  # default on minimal Debian (Ubuntu ships it).
+  - gnupg
 docker_apt_keyring_dir: /etc/apt/keyrings
 docker_apt_keyring_file: /etc/apt/keyrings/docker.asc
 
