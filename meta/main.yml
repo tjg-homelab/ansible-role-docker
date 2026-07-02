@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  role_name: docker
+  author: rnissen
+  description: >-
+    Install Docker Engine via Docker's official apt repository on Debian-family
+    systems (Debian, Ubuntu) and optionally manage a Portainer CE container
+  license: MIT
+  min_ansible_version: "2.14"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+        - trixie
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - docker
+    - container
+    - containers
+    - portainer
+    - dockerce
+
+dependencies: []

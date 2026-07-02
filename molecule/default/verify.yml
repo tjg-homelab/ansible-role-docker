@@ -1,0 +1,37 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Stat Docker apt keyring
+      ansible.builtin.stat:
+        path: /etc/apt/keyrings/docker.asc
+      register: docker_keyring_stat
+
+    - name: Assert Docker apt keyring exists
+      ansible.builtin.assert:
+        that:
+          - docker_keyring_stat.stat.exists
+          - docker_keyring_stat.stat.isreg
+          - docker_keyring_stat.stat.mode == "0644"
+
+    - name: Stat Docker apt source list file
+      ansible.builtin.stat:
+        path: /etc/apt/sources.list.d/docker.list
+      register: docker_repo_file_stat
+
+    - name: Assert Docker apt source list file exists
+      ansible.builtin.assert:
+        that:
+          - docker_repo_file_stat.stat.exists
+          - docker_repo_file_stat.stat.isreg
+
+    - name: Query Docker CLI version
+      ansible.builtin.command: docker --version
+      changed_when: false
+      register: docker_cli_version
+
+    - name: Assert Docker CLI is available
+      ansible.builtin.assert:
+        that:
+          - "'Docker version' in docker_cli_version.stdout"

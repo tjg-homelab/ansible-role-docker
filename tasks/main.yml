@@ -1,0 +1,77 @@
+---
+- name: Assert supported OS
+  ansible.builtin.assert:
+    that:
+      - ansible_facts["os_family"] | lower == "debian"
+    fail_msg: "docker role supports Debian-family systems (Debian, Ubuntu)."
+
+- name: Map architecture to Docker repo architecture
+  ansible.builtin.set_fact:
+    docker_repo_arch: >-
+      {{
+        {
+          "x86_64": "amd64",
+          "aarch64": "arm64",
+          "armv7l": "armhf",
+          "armv6l": "armhf",
+          "ppc64le": "ppc64el",
+          "s390x": "s390x"
+        }.get(ansible_facts["architecture"], ansible_facts["architecture"])
+      }}
+
+- name: Install Docker apt prerequisite packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ docker_apt_prereq_packages }}"
+    state: present
+    update_cache: true
+
+- name: Remove conflicting distro Docker packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ docker_conflicting_packages }}"
+    state: absent
+
+- name: Ensure Docker apt keyring directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ docker_apt_keyring_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install Docker apt signing key
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ docker_apt_repo_url }}/gpg"
+    dest: "{{ docker_apt_keyring_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: not ansible_check_mode
+
+- name: Configure Docker apt repository
+  become: true
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [arch={{ docker_repo_arch }} signed-by={{ docker_apt_keyring_file }}]
+      {{ docker_apt_repo_url }} {{ ansible_facts["distribution_release"] }} {{ docker_apt_repo_component }}
+    state: present
+    filename: docker
+    update_cache: true
+
+- name: Install Docker Engine packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    state: present
+    update_cache: true
+
+- name: Ensure Docker service is configured
+  become: true
+  ansible.builtin.systemd_service:
+    name: "{{ docker_service_name }}"
+    enabled: "{{ docker_service_enabled }}"
+    state: "{{ docker_service_state }}"
+  when: docker_manage_service | bool
